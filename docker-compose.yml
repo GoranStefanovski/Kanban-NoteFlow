@@ -52,8 +52,8 @@ services:
       context: ./client
       dockerfile: Dockerfile
       args:
-        # API URL from .env (defaults to localhost if not set)
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:3000/api}
+        # API URL from .env (defaults to production domain if not set)
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://domain.com/api}
     restart: unless-stopped
     ports:
       # Expose only to localhost for Nginx reverse proxy

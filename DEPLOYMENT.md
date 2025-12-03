@@ -27,7 +27,7 @@ This guide provides step-by-step instructions for deploying Personal Notepad to 
 - **Root/sudo access**
 
 ### Domain Requirements
-- A registered domain name (e.g., example.com)
+- A registered domain name (e.g., domain.com)
 - Access to DNS management panel
 
 ### Local Requirements
@@ -120,11 +120,11 @@ TTL: 3600
 
 ```bash
 # Check if DNS is pointing to your server
-dig example.com +short
+dig domain.com +short
 # Should return your server IP
 
 # Or use nslookup
-nslookup example.com
+nslookup domain.com
 ```
 
 DNS propagation can take 5 minutes to 48 hours. Most providers propagate within 1-2 hours.
@@ -168,7 +168,7 @@ sudo vim .env
 JWT_SECRET=$(openssl rand -base64 32)
 
 # Set admin credentials
-ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_EMAIL=admin@domain.com
 ADMIN_PASSWORD=YourSecurePassword123!
 
 # Configure SMTP (Gmail example)
@@ -176,7 +176,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
-SMTP_FROM_EMAIL=noreply@yourdomain.com
+SMTP_FROM_EMAIL=noreply@domain.com
 
 # MongoDB URI (keep default for Docker)
 MONGODB_URI=mongodb://mongodb:27017/personal-notepad
@@ -209,7 +209,8 @@ chmod 600 /opt/personal-notepad/.env
 sudo cp /opt/personal-notepad/nginx/notepad.conf /etc/nginx/sites-available/notepad
 
 # Update domain name in the config
-sudo sed -i 's/example.com/yourdomain.com/g' /etc/nginx/sites-available/notepad
+sudo sed -i 's/domain.com/domain.com/g' /etc/nginx/sites-available/notepad
+# Note: The nginx config is already set to domain.com, so this command is optional
 ```
 
 ### 2. Create Certbot Directory
@@ -228,9 +229,9 @@ sudo nano /etc/nginx/sites-available/notepad
 
 Comment out these lines in the HTTPS server block (add # at the beginning):
 ```nginx
-#    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-#    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-#    ssl_trusted_certificate /etc/letsencrypt/live/yourdomain.com/chain.pem;
+#    ssl_certificate /etc/letsencrypt/live/domain.com/fullchain.pem;
+#    ssl_certificate_key /etc/letsencrypt/live/domain.com/privkey.pem;
+#    ssl_trusted_certificate /etc/letsencrypt/live/domain.com/chain.pem;
 ```
 
 Temporarily change the listen directive:
@@ -272,7 +273,7 @@ sudo apt install -y certbot python3-certbot-nginx
 sudo systemctl stop nginx
 
 # Obtain certificate
-sudo certbot certonly --standalone -d yourdomain.com -d www.yourdomain.com
+sudo certbot certonly --standalone -d domain.com -d www.domain.com
 
 # Follow the prompts:
 # - Enter your email address
@@ -291,9 +292,9 @@ Uncomment the SSL lines and restore the listen directives:
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
     
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-    ssl_trusted_certificate /etc/letsencrypt/live/yourdomain.com/chain.pem;
+    ssl_certificate /etc/letsencrypt/live/domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/domain.com/privkey.pem;
+    ssl_trusted_certificate /etc/letsencrypt/live/domain.com/chain.pem;
 ```
 
 ### 4. Test and Restart Nginx
@@ -413,13 +414,13 @@ To                         Action      From
 ### 1. Access Your Application
 
 Open your browser and navigate to:
-- **Frontend**: https://yourdomain.com
-- **Admin Login**: https://yourdomain.com/admin/login
-- **Public Login**: https://yourdomain.com/login
+- **Frontend**: https://domain.com
+- **Admin Login**: https://domain.com/admin/login
+- **Public Login**: https://domain.com/login
 
 ### 2. First-Time Login
 
-1. Go to https://yourdomain.com/admin/login
+1. Go to https://domain.com/admin/login
 2. Use credentials from your `.env` file:
    - Email: Your ADMIN_EMAIL
    - Password: Your ADMIN_PASSWORD
@@ -575,7 +576,7 @@ sudo certbot renew
 
 **Test SSL:**
 ```bash
-openssl s_client -connect yourdomain.com:443 -servername yourdomain.com
+openssl s_client -connect domain.com:443 -servername domain.com
 ```
 
 ### Database Connection Issues

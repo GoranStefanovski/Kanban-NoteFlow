@@ -1,0 +1,134 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    PERSONAL NOTEPAD - QUICK DEPLOY                         ║
+║                          Domain: domain.com                                ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+┌─ BEFORE YOU START ─────────────────────────────────────────────────────────┐
+│                                                                             │
+│ ✓ Server with Ubuntu/Debian (2GB RAM, 20GB storage)                       │
+│ ✓ DNS: domain.com → YOUR_SERVER_IP                                        │
+│ ✓ Root/sudo access to server                                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ AUTOMATED DEPLOYMENT (3 COMMANDS) ────────────────────────────────────────┐
+│                                                                             │
+│  1. cp .env.production .env                                                │
+│  2. nano .env    # Update JWT_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, SMTP   │
+│  3. ./deploy.sh                                                            │
+│                                                                             │
+│  That's it! Script handles everything automatically.                       │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ MANUAL DEPLOYMENT ────────────────────────────────────────────────────────┐
+│                                                                             │
+│  # 1. Install dependencies                                                 │
+│  sudo apt update && sudo apt upgrade -y                                    │
+│  curl -fsSL https://get.docker.com | sh                                    │
+│  sudo apt install -y nginx certbot python3-certbot-nginx                  │
+│                                                                             │
+│  # 2. Configure environment                                                │
+│  cp .env.production .env                                                   │
+│  nano .env  # Update all CHANGE_THIS values                               │
+│                                                                             │
+│  # 3. Start application                                                    │
+│  docker compose up --build -d                                              │
+│                                                                             │
+│  # 4. Configure Nginx                                                      │
+│  sudo cp nginx/notepad.conf /etc/nginx/sites-available/notepad            │
+│  sudo ln -s /etc/nginx/sites-available/notepad /etc/nginx/sites-enabled/  │
+│  sudo rm /etc/nginx/sites-enabled/default                                 │
+│  sudo nginx -t && sudo systemctl reload nginx                             │
+│                                                                             │
+│  # 5. Get SSL certificate                                                  │
+│  sudo systemctl stop nginx                                                 │
+│  sudo certbot certonly --standalone -d domain.com -d www.domain.com       │
+│  sudo systemctl start nginx                                                │
+│                                                                             │
+│  # 6. Configure firewall                                                   │
+│  sudo ufw allow 22/tcp && sudo ufw allow 80/tcp && sudo ufw allow 443/tcp │
+│  sudo ufw enable                                                           │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ENVIRONMENT VARIABLES (REQUIRED) ─────────────────────────────────────────┐
+│                                                                             │
+│  JWT_SECRET          Generate: openssl rand -base64 64                     │
+│  ADMIN_EMAIL         admin@domain.com                                      │
+│  ADMIN_PASSWORD      Strong password (min 8 chars)                         │
+│  SMTP_USER           your-email@gmail.com                                  │
+│  SMTP_PASSWORD       Gmail app password (16 chars)                         │
+│                                                                             │
+│  Gmail Setup: https://myaccount.google.com/apppasswords                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ ACCESS URLS ──────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  Frontend:      https://domain.com                                         │
+│  Admin Login:   https://domain.com/admin/login                             │
+│  Public Login:  https://domain.com/login                                   │
+│  API:           https://domain.com/api                                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ USEFUL COMMANDS ──────────────────────────────────────────────────────────┐
+│                                                                             │
+│  View logs:          docker compose logs -f                                │
+│  Restart:            docker compose restart                                │
+│  Stop:               docker compose down                                   │
+│  Status:             docker compose ps                                     │
+│  Nginx logs:         sudo tail -f /var/log/nginx/notepad-error.log        │
+│  Test Nginx:         sudo nginx -t                                         │
+│  Firewall status:    sudo ufw status                                       │
+│  SSL status:         sudo certbot certificates                             │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ TROUBLESHOOTING ──────────────────────────────────────────────────────────┐
+│                                                                             │
+│  App not accessible:                                                       │
+│    → Check DNS: dig domain.com +short                                      │
+│    → Check containers: docker compose ps                                   │
+│    → Check firewall: sudo ufw status                                       │
+│    → Check Nginx: sudo systemctl status nginx                              │
+│                                                                             │
+│  SSL issues:                                                               │
+│    → Check cert: sudo certbot certificates                                 │
+│    → Renew: sudo certbot renew                                             │
+│    → Test: openssl s_client -connect domain.com:443                        │
+│                                                                             │
+│  Email not working:                                                        │
+│    → Check logs: docker compose logs backend | grep -i mail               │
+│    → Test SMTP: telnet smtp.gmail.com 587                                  │
+│    → Verify app password is correct                                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ POST-DEPLOYMENT CHECKLIST ────────────────────────────────────────────────┐
+│                                                                             │
+│  ☐ Access https://domain.com (should show login page)                     │
+│  ☐ SSL certificate valid (green padlock in browser)                       │
+│  ☐ Admin login works                                                       │
+│  ☐ Change admin password immediately!                                      │
+│  ☐ Test email (create public user, verify code received)                  │
+│  ☐ Create test project and notes                                          │
+│  ☐ Verify firewall: sudo ufw status                                       │
+│  ☐ All containers running: docker compose ps                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─ DOCUMENTATION ────────────────────────────────────────────────────────────┐
+│                                                                             │
+│  README_DEPLOYMENT.md    Overview and quick start                          │
+│  QUICK_DEPLOY.md         Streamlined guide                                 │
+│  DEPLOYMENT.md           Complete step-by-step guide                       │
+│  deploy.sh               Automated deployment script                       │
+│  .env.production         Production environment template                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║  🚀 READY TO DEPLOY! Run ./deploy.sh to start automated deployment        ║
+╚════════════════════════════════════════════════════════════════════════════╝
