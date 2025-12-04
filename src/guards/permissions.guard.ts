@@ -5,15 +5,21 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { JwtPayload } from '../auth/strategies/jwt.strategy';
+import { Group, GroupDocument } from '../schemas/group.schema';
 
 export type PermissionType = 'read' | 'write';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    @InjectModel(Group.name) private groupModel: Model<GroupDocument>,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermission = this.reflector.get<PermissionType>(
       'permission',
       context.getHandler(),
@@ -32,7 +38,15 @@ export class PermissionsGuard implements CanActivate {
     }
 
     // Check if public user has the required permission for the project
-    const projectId = request.params.projectId || request.body.projectId;
+    let projectId = request.params.projectId || request.body.projectId;
+
+    // If projectId not found but we have a groupId, fetch the group to get projectId
+    if (!projectId && request.params.id) {
+      const group = await this.groupModel.findById(request.params.id);
+      if (group) {
+        projectId = group.projectId;
+      }
+    }
 
     if (!projectId) {
       throw new ForbiddenException('Project ID required');

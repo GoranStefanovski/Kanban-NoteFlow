@@ -93,7 +93,7 @@ export default function MainContent() {
       <div className="h-full p-4 sm:p-6">
         <div className="mb-4 sm:mb-6 flex items-center justify-between gap-3">
           <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Note Groups</h2>
-          {isAdmin && canWrite && (
+          {canWrite && (
             <button
               onClick={() => setShowGroupForm(true)}
               className="px-3 sm:px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2 text-sm sm:text-base"
@@ -109,7 +109,7 @@ export default function MainContent() {
 
         {groups.length === 0 ? (
           <div className="text-center text-gray-500 py-12 sm:py-16">
-            <p className="text-sm sm:text-base">No groups yet. {isAdmin && 'Create one to get started!'}</p>
+            <p className="text-sm sm:text-base">No groups yet. {canWrite && 'Create one to get started!'}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
