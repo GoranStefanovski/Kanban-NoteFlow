@@ -1,18 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { publicUsersApi } from '@/lib/api';
 
 interface PublicUserFormProps {
   onClose: () => void;
   onSuccess: () => void;
+  user?: any; // Optional user prop for edit mode
 }
 
-export default function PublicUserForm({ onClose, onSuccess }: PublicUserFormProps) {
+export default function PublicUserForm({ onClose, onSuccess, user }: PublicUserFormProps) {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const isEditMode = !!user;
+
+  // Pre-populate fields when editing
+  useEffect(() => {
+    if (user) {
+      setUsername(user.username || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,15 +30,24 @@ export default function PublicUserForm({ onClose, onSuccess }: PublicUserFormPro
     setLoading(true);
 
     try {
-      await publicUsersApi.create({
-        username,
-        email,
-        projectPermissions: [], // Start with no permissions
-      });
+      if (isEditMode) {
+        // Update existing user
+        await publicUsersApi.update(user._id, {
+          username,
+          email,
+        });
+      } else {
+        // Create new user
+        await publicUsersApi.create({
+          username,
+          email,
+          projectPermissions: [], // Start with no permissions
+        });
+      }
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to create user');
+      setError(err.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} user`);
     } finally {
       setLoading(false);
     }
@@ -37,7 +56,9 @@ export default function PublicUserForm({ onClose, onSuccess }: PublicUserFormPro
   return (
     <div className="fixed inset-0 backdrop-blur-sm bg-white/30 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-        <h2 className="text-2xl font-bold mb-4">Add Public User</h2>
+        <h2 className="text-2xl font-bold mb-4">
+          {isEditMode ? 'Edit Public User' : 'Add Public User'}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -81,10 +102,12 @@ export default function PublicUserForm({ onClose, onSuccess }: PublicUserFormPro
             </div>
           )}
 
-          <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg text-sm text-blue-800">
-            <p className="font-medium mb-1">Note:</p>
-            <p>The user will be created without project access. You can assign project permissions later.</p>
-          </div>
+          {!isEditMode && (
+            <div className="bg-blue-50 border border-blue-200 px-4 py-3 rounded-lg text-sm text-blue-800">
+              <p className="font-medium mb-1">Note:</p>
+              <p>The user will be created without project access. You can assign project permissions later.</p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
@@ -99,7 +122,7 @@ export default function PublicUserForm({ onClose, onSuccess }: PublicUserFormPro
               disabled={loading}
               className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating...' : 'Create User'}
+              {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update User' : 'Create User')}
             </button>
           </div>
         </form>
