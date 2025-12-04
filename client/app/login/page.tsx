@@ -48,7 +48,7 @@ export default function PublicLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-teal-600 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-500 to-teal-600 px-4">
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
           Login
@@ -139,11 +139,15 @@ export default function PublicLogin() {
               }}
               className="w-full text-sm text-blue-600 hover:text-blue-700 mt-2"
             >
-              Back to username
+              Back to Public Login
             </button>
           </form>
         )}
       </div>
+      
+      <footer className="mt-8 text-white text-sm text-center">
+        Made with &lt;3 by Tevidma
+      </footer>
     </div>
   );
 }

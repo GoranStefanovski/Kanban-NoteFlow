@@ -30,7 +30,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 px-4">
       <div className="bg-white p-6 sm:p-8 rounded-lg shadow-2xl w-full max-w-md">
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
           Admin Login
@@ -100,6 +100,10 @@ export default function AdminLogin() {
           </a>
         </div>
       </div>
+      
+      <footer className="mt-8 text-white text-sm text-center">
+        Made with &lt;3 by Tevidma
+      </footer>
     </div>
   );
 }
