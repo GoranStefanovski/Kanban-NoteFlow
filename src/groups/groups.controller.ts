@@ -12,7 +12,8 @@ import { GroupsService } from './groups.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
-import { AdminGuard } from '../guards/admin.guard';
+import { PermissionsGuard } from '../guards/permissions.guard';
+import { RequirePermission } from '../decorators/permission.decorator';
 
 @Controller('groups')
 @UseGuards(JwtAuthGuard)
@@ -20,7 +21,8 @@ export class GroupsController {
   constructor(private readonly groupsService: GroupsService) {}
 
   @Post()
-  @UseGuards(AdminGuard)
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('write')
   create(@Body() createGroupDto: CreateGroupDto) {
     return this.groupsService.create(createGroupDto);
   }
@@ -36,13 +38,15 @@ export class GroupsController {
   }
 
   @Patch(':id')
-  @UseGuards(AdminGuard)
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('write')
   update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
     return this.groupsService.update(id, updateGroupDto);
   }
 
   @Delete(':id')
-  @UseGuards(AdminGuard)
+  @UseGuards(PermissionsGuard)
+  @RequirePermission('write')
   remove(@Param('id') id: string) {
     return this.groupsService.remove(id);
   }

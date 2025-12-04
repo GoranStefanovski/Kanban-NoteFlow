@@ -5,6 +5,7 @@ import { GroupsController } from './groups.controller';
 import { Group, GroupSchema } from '../schemas/group.schema';
 import { Note, NoteSchema } from '../schemas/note.schema';
 import { AuthModule } from '../auth/auth.module';
+import { PermissionsGuard } from '../guards/permissions.guard';
 
 @Module({
   imports: [
@@ -15,7 +16,7 @@ import { AuthModule } from '../auth/auth.module';
     AuthModule,
   ],
   controllers: [GroupsController],
-  providers: [GroupsService],
+  providers: [GroupsService, PermissionsGuard],
 })
 export class GroupsModule {}
 

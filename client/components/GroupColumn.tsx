@@ -58,7 +58,7 @@ export default function GroupColumn({ group }: GroupColumnProps) {
         >
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-gray-800">{group.name}</h3>
-            {isAdmin && (
+            {canWrite && (
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setShowGroupForm(true)}
