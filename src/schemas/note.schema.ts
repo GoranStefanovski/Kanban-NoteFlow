@@ -20,14 +20,14 @@ export class Note {
   @Prop({ default: 'admin' })
   createdBy: string;
 
-  @Prop({ type: String, default: null })
-  assigneeId: string;
+  @Prop({ type: String, required: false })
+  assigneeId?: string;
 
-  @Prop({ default: '' })
-  assigneeName: string;
+  @Prop({ type: String, required: false })
+  assigneeName?: string;
 
-  @Prop({ type: Date, default: null })
-  dueDate: Date;
+  @Prop({ type: Date, required: false })
+  dueDate?: Date;
 }
 
 export const NoteSchema = SchemaFactory.createForClass(Note);

@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, MinLength, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, MinLength, IsDateString, ValidateIf } from 'class-validator';
 
 export class CreateNoteDto {
   @IsString()
@@ -16,16 +16,19 @@ export class CreateNoteDto {
   @IsOptional()
   order?: number;
 
+  @ValidateIf((o) => o.assigneeId !== null)
   @IsString()
   @IsOptional()
-  assigneeId?: string;
+  assigneeId?: string | null;
 
+  @ValidateIf((o) => o.assigneeName !== null)
   @IsString()
   @IsOptional()
-  assigneeName?: string;
+  assigneeName?: string | null;
 
+  @ValidateIf((o) => o.dueDate !== null)
   @IsDateString()
   @IsOptional()
-  dueDate?: Date;
+  dueDate?: Date | null;
 }
 

@@ -55,7 +55,35 @@ export class NotesService {
   }
 
   async update(id: string, updateNoteDto: UpdateNoteDto, user: JwtPayload) {
-    const note = await this.noteModel.findByIdAndUpdate(id, updateNoteDto, {
+    // Get the note before updating to compare changes
+    const oldNote = await this.noteModel.findById(id);
+    if (!oldNote) {
+      throw new NotFoundException('Note not found');
+    }
+
+    // Handle null values by explicitly unsetting fields
+    const updateOperations: any = { $set: {} };
+    
+    Object.keys(updateNoteDto).forEach((key) => {
+      const value = updateNoteDto[key];
+      if (value === null) {
+        // Use $unset to remove the field
+        if (!updateOperations.$unset) {
+          updateOperations.$unset = {};
+        }
+        updateOperations.$unset[key] = '';
+      } else if (value !== undefined) {
+        // Use $set for regular updates
+        updateOperations.$set[key] = value;
+      }
+    });
+
+    // Remove empty $set if no fields to set
+    if (Object.keys(updateOperations.$set).length === 0) {
+      delete updateOperations.$set;
+    }
+
+    const note = await this.noteModel.findByIdAndUpdate(id, updateOperations, {
       new: true,
     });
     if (!note) {
@@ -65,17 +93,126 @@ export class NotesService {
     // Get group to find projectId
     const group = await this.groupModel.findById(note.groupId);
     if (group) {
-      await this.activityLogService.logActivity({
+      const userName = user.role === 'admin' ? 'Admin' : (user.username || 'Unknown User');
+      const baseLogParams = {
         projectId: group.projectId,
         userId: user.sub,
         userRole: user.role,
-        userName: user.role === 'admin' ? 'Admin' : (user.username || 'Unknown User'),
-        action: 'updated',
-        entityType: 'note',
+        userName,
+        entityType: 'note' as const,
         entityId: note._id.toString(),
         entityName: note.title,
-        details: { changes: Object.keys(updateNoteDto) },
-      });
+      };
+
+      // Log specific changes for assignee, due date
+      const logPromises: Promise<void>[] = [];
+
+      // Check assignee changes
+      if ('assigneeId' in updateNoteDto || 'assigneeName' in updateNoteDto) {
+        const oldAssignee = oldNote.assigneeName;
+        const newAssignee = note.assigneeName;
+
+        if (!oldAssignee && newAssignee) {
+          // Assigned to someone new
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'assigned note to',
+              details: { assigneeTo: newAssignee },
+            })
+          );
+        } else if (oldAssignee && !newAssignee) {
+          // Removed assignee
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'removed assignee',
+              details: { previousAssignee: oldAssignee },
+            })
+          );
+        } else if (oldAssignee && newAssignee && oldAssignee !== newAssignee) {
+          // Changed assignee
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'changed assignee',
+              details: { from: oldAssignee, to: newAssignee },
+            })
+          );
+        }
+      }
+
+      // Check due date changes
+      if ('dueDate' in updateNoteDto) {
+        const oldDueDate = oldNote.dueDate;
+        const newDueDate = note.dueDate;
+
+        if (!oldDueDate && newDueDate) {
+          // Set due date
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'set due date',
+              details: { dueDate: newDueDate.toISOString().split('T')[0] },
+            })
+          );
+        } else if (oldDueDate && !newDueDate) {
+          // Removed due date
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'removed due date',
+              details: { previousDueDate: oldDueDate.toISOString().split('T')[0] },
+            })
+          );
+        } else if (oldDueDate && newDueDate && oldDueDate.getTime() !== newDueDate.getTime()) {
+          // Changed due date
+          logPromises.push(
+            this.activityLogService.logActivity({
+              ...baseLogParams,
+              action: 'changed due date',
+              details: { 
+                from: oldDueDate.toISOString().split('T')[0], 
+                to: newDueDate.toISOString().split('T')[0] 
+              },
+            })
+          );
+        }
+      }
+
+      // Check for title/content changes
+      if (('title' in updateNoteDto && updateNoteDto.title !== oldNote.title) ||
+          ('content' in updateNoteDto && updateNoteDto.content !== oldNote.content)) {
+        const changes: string[] = [];
+        if ('title' in updateNoteDto && updateNoteDto.title !== oldNote.title) {
+          changes.push('title');
+        }
+        if ('content' in updateNoteDto && updateNoteDto.content !== oldNote.content) {
+          changes.push('content');
+        }
+        
+        logPromises.push(
+          this.activityLogService.logActivity({
+            ...baseLogParams,
+            action: 'updated note',
+            details: { changes },
+          })
+        );
+      }
+
+      // If no specific changes were detected, log a generic update
+      if (logPromises.length === 0 && Object.keys(updateNoteDto).length > 0) {
+        logPromises.push(
+          this.activityLogService.logActivity({
+            ...baseLogParams,
+            action: 'updated note',
+            details: { changes: Object.keys(updateNoteDto) },
+          })
+        );
+      }
+
+      // Execute all log operations
+      await Promise.all(logPromises);
     }
 
     return note;

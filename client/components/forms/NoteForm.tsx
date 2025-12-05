@@ -59,9 +59,9 @@ export default function NoteForm({ note, groupId, projectId, onClose }: NoteForm
       const noteData = {
         title,
         content,
-        assigneeId: assigneeId || undefined,
-        assigneeName: assigneeName || undefined,
-        dueDate: dueDate || undefined,
+        assigneeId: assigneeId || null,
+        assigneeName: assigneeName || null,
+        dueDate: dueDate || null,
       };
 
       if (isEdit) {

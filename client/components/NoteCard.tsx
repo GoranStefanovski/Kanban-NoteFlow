@@ -104,8 +104,8 @@ export default function NoteCard({ note, projectId, onEdit }: NoteCardProps) {
     const selectedUser = projectUsers.find((u) => u.id === userId);
     try {
       await updateNote(note._id, {
-        assigneeId: userId || undefined,
-        assigneeName: selectedUser?.name || undefined,
+        assigneeId: userId || null,
+        assigneeName: selectedUser?.name || null,
       });
       setShowAssigneeDropdown(false);
     } catch (error) {
@@ -193,11 +193,31 @@ export default function NoteCard({ note, projectId, onEdit }: NoteCardProps) {
 
               {/* Due Date Badge */}
               {dueDateStatus && (
-                <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${dueDateStatus.color}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${dueDateStatus.color} ${canWrite ? 'pr-1' : ''}`}>
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   {dueDateStatus.text}
+                  {canWrite && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        try {
+                          await updateNote(note._id, { dueDate: null });
+                        } catch (error) {
+                          console.error('Failed to clear due date:', error);
+                        }
+                      }}
+                      type="button"
+                      className="ml-0.5 hover:bg-black/10 rounded-full p-0.5 transition-colors"
+                      title="Clear due date"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                 </span>
               )}
               

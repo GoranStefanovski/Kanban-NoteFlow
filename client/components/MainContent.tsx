@@ -5,19 +5,31 @@ import { useAuthStore } from '@/stores/authStore';
 import { useDataStore } from '@/stores/dataStore';
 import GroupColumn from './GroupColumn';
 import GroupForm from './forms/GroupForm';
-import { DndContext, DragOverlay, closestCorners, DragEndEvent, DragStartEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, closestCorners, DragEndEvent, DragStartEvent, DragOverEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import NoteCard from './NoteCard';
 
 export default function MainContent() {
   const user = useAuthStore((state) => state.user);
-  const { selectedProjectId, groups, notes, fetchGroups, moveNote } = useDataStore();
+  const { selectedProjectId, groups, notes, fetchGroups, moveNote, updateGroup } = useDataStore();
   const [showGroupForm, setShowGroupForm] = useState(false);
   const [activeNote, setActiveNote] = useState<any>(null);
+  const [activeGroup, setActiveGroup] = useState<any>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const isAdmin = user?.role === 'admin';
   // Public users need BOTH canRead AND canWrite to perform write operations
   const canWrite = isAdmin || user?.permissions?.some(
     p => p.projectId === selectedProjectId && p.canRead && p.canWrite
+  );
+
+  // Configure sensors for better drag experience
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before dragging starts
+      },
+    })
   );
 
   useEffect(() => {
@@ -27,16 +39,59 @@ export default function MainContent() {
   }, [selectedProjectId, fetchGroups]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    const note = notes.find((n) => n._id === event.active.id);
-    setActiveNote(note);
+    const { active } = event;
+    setActiveId(active.id as string);
+    
+    // Check if dragging a note or a group
+    const note = notes.find((n) => n._id === active.id);
+    const group = groups.find((g) => g._id === active.id);
+    
+    if (note) {
+      setActiveNote(note);
+    } else if (group) {
+      setActiveGroup(group);
+    }
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveNote(null);
+    setActiveGroup(null);
+    setActiveId(null);
 
     if (!over) return;
 
+    // Check if we're dragging a group
+    const draggedGroup = groups.find((g) => g._id === active.id);
+    if (draggedGroup) {
+      const overId = over.id as string;
+      const overGroup = groups.find((g) => g._id === overId);
+      
+      if (overGroup && draggedGroup._id !== overGroup._id) {
+        const oldIndex = groups.findIndex((g) => g._id === draggedGroup._id);
+        const newIndex = groups.findIndex((g) => g._id === overGroup._id);
+        
+        const reorderedGroups = arrayMove(groups, oldIndex, newIndex);
+        
+        // Update order for all affected groups
+        try {
+          await Promise.all(
+            reorderedGroups.map((group, index) =>
+              updateGroup(group._id, { order: index })
+            )
+          );
+          // Refresh to get updated data
+          if (selectedProjectId) {
+            fetchGroups(selectedProjectId);
+          }
+        } catch (error) {
+          console.error('Failed to reorder groups:', error);
+        }
+      }
+      return;
+    }
+
+    // Handle note dragging (existing logic)
     const noteId = active.id as string;
     const newGroupId = over.id as string;
 
@@ -86,6 +141,7 @@ export default function MainContent() {
 
   return (
     <DndContext
+      sensors={sensors}
       collisionDetection={closestCorners}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
@@ -112,11 +168,13 @@ export default function MainContent() {
             <p className="text-sm sm:text-base">No groups yet. {canWrite && 'Create one to get started!'}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
-            {groups.map((group) => (
-              <GroupColumn key={group._id} group={group} />
-            ))}
-          </div>
+          <SortableContext items={groups.map(g => g._id)} strategy={horizontalListSortingStrategy}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4">
+              {groups.map((group) => (
+                <GroupColumn key={group._id} group={group} canWrite={canWrite} />
+              ))}
+            </div>
+          </SortableContext>
         )}
 
         {showGroupForm && (
@@ -131,6 +189,15 @@ export default function MainContent() {
         {activeNote ? (
           <div className="bg-white p-3 rounded-lg border-2 border-indigo-500 shadow-xl opacity-90">
             <h4 className="font-medium text-gray-800">{activeNote.title}</h4>
+          </div>
+        ) : activeGroup ? (
+          <div className="bg-white rounded-lg shadow-2xl border-2 border-indigo-500 w-80 opacity-90">
+            <div
+              className="p-4 border-b border-gray-200"
+              style={{ borderTopColor: activeGroup.color, borderTopWidth: '4px' }}
+            >
+              <h3 className="font-semibold text-gray-800">{activeGroup.name}</h3>
+            </div>
           </div>
         ) : null}
       </DragOverlay>
