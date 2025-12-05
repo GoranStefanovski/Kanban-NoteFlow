@@ -9,12 +9,15 @@ import NoteForm from './forms/NoteForm';
 import GroupForm from './forms/GroupForm';
 import ConfirmDialog from './ConfirmDialog';
 import { useDroppable } from '@dnd-kit/core';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface GroupColumnProps {
   group: Group;
+  canWrite?: boolean;
 }
 
-export default function GroupColumn({ group }: GroupColumnProps) {
+export default function GroupColumn({ group, canWrite: parentCanWrite }: GroupColumnProps) {
   const user = useAuthStore((state) => state.user);
   const { notes, fetchNotes, deleteGroup } = useDataStore();
   const [showNoteForm, setShowNoteForm] = useState(false);
@@ -22,15 +25,40 @@ export default function GroupColumn({ group }: GroupColumnProps) {
   const [showGroupForm, setShowGroupForm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
-  const { setNodeRef } = useDroppable({
+  // Use both sortable (for group reordering) and droppable (for notes)
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setSortableNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: group._id,
+    disabled: !parentCanWrite,
+  });
+
+  const { setNodeRef: setDroppableNodeRef } = useDroppable({
     id: group._id,
   });
 
+  // Combine refs
+  const setNodeRef = (node: HTMLElement | null) => {
+    setSortableNodeRef(node);
+    setDroppableNodeRef(node);
+  };
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   const isAdmin = user?.role === 'admin';
   // Public users need BOTH canRead AND canWrite to perform write operations
-  const canWrite = isAdmin || user?.permissions?.some(
+  const canWrite = parentCanWrite ?? (isAdmin || user?.permissions?.some(
     p => p.projectId === group.projectId && p.canRead && p.canWrite
-  );
+  ));
   const groupNotes = notes.filter((note) => note.groupId === group._id);
 
   useEffect(() => {
@@ -50,6 +78,7 @@ export default function GroupColumn({ group }: GroupColumnProps) {
     <>
       <div
         ref={setNodeRef}
+        style={style}
         className="bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col h-[500px] sm:h-[600px]"
       >
         <div
@@ -57,9 +86,23 @@ export default function GroupColumn({ group }: GroupColumnProps) {
           style={{ borderTopColor: group.color, borderTopWidth: '4px' }}
         >
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800">{group.name}</h3>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {canWrite && (
+                <button
+                  {...attributes}
+                  {...listeners}
+                  className="p-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing touch-none"
+                  title="Drag to reorder"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 3C9 2.44772 9.44772 2 10 2C10.5523 2 11 2.44772 11 3V21C11 21.5523 10.5523 22 10 22C9.44772 22 9 21.5523 9 21V3ZM13 3C13 2.44772 13.4477 2 14 2C14.5523 2 15 2.44772 15 3V21C15 21.5523 14.5523 22 14 22C13.4477 22 13 21.5523 13 21V3Z" />
+                  </svg>
+                </button>
+              )}
+              <h3 className="font-semibold text-gray-800 truncate">{group.name}</h3>
+            </div>
             {canWrite && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 ml-2">
                 <button
                   onClick={() => setShowGroupForm(true)}
                   className="p-1 text-black-600 hover:text-indigo-600 hover:bg-indigo-50 rounded"

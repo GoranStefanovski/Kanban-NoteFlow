@@ -79,9 +79,9 @@ export const groupsApi = {
 export const notesApi = {
   getByGroup: (groupId: string) => api.get(`/notes/group/${groupId}`),
   getOne: (id: string) => api.get(`/notes/${id}`),
-  create: (data: { title: string; content?: string; groupId: string; order?: number; assigneeId?: string; assigneeName?: string }) =>
+  create: (data: { title: string; content?: string; groupId: string; order?: number; assigneeId?: string | null; assigneeName?: string | null; dueDate?: string | null }) =>
     api.post('/notes', data),
-  update: (id: string, data: { title?: string; content?: string; assigneeId?: string; assigneeName?: string }) =>
+  update: (id: string, data: { title?: string; content?: string; assigneeId?: string | null; assigneeName?: string | null; dueDate?: string | null }) =>
     api.patch(`/notes/${id}`, data),
   move: (id: string, data: { newGroupId: string; newOrder: number }) =>
     api.patch(`/notes/${id}/move`, data),

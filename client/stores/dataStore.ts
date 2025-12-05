@@ -24,8 +24,8 @@ interface DataState {
   
   // Notes
   fetchNotes: (groupId: string) => Promise<void>;
-  createNote: (data: { title: string; content?: string; groupId: string; order?: number; assigneeId?: string; assigneeName?: string; dueDate?: string }) => Promise<void>;
-  updateNote: (id: string, data: { title?: string; content?: string; assigneeId?: string; assigneeName?: string; dueDate?: string }) => Promise<void>;
+  createNote: (data: { title: string; content?: string; groupId: string; order?: number; assigneeId?: string | null; assigneeName?: string | null; dueDate?: string | null }) => Promise<void>;
+  updateNote: (id: string, data: { title?: string; content?: string; assigneeId?: string | null; assigneeName?: string | null; dueDate?: string | null }) => Promise<void>;
   moveNote: (id: string, data: { newGroupId: string; newOrder: number }) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   
