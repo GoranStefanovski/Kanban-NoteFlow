@@ -12,7 +12,7 @@ export default function ActivityPage() {
   const router = useRouter();
   const projectId = params.projectId as string;
   const user = useAuthStore((state) => state.user);
-  const { projects } = useDataStore();
+  const { projects, fetchProjects } = useDataStore();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,23 +21,33 @@ export default function ActivityPage() {
   const project = projects.find(p => p._id === projectId);
 
   useEffect(() => {
-    // Redirect if not admin
-    if (user && user.role !== 'admin') {
-      router.push('/dashboard');
+    // Ensure projects are loaded
+    if (projects.length === 0) {
+      fetchProjects();
     }
-  }, [user, router]);
+  }, [projects.length, fetchProjects]);
 
   useEffect(() => {
-    fetchLogs();
+    if (projectId) {
+      fetchLogs();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   const fetchLogs = async () => {
+    if (!projectId) {
+      setError('No project ID provided');
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       const response = await activityLogApi.getByProject(projectId, 500); // Get more logs
       setLogs(response.data);
     } catch (err: any) {
+      console.error('Activity log fetch error:', err);
       setError(err.response?.data?.message || 'Failed to load activity logs');
     } finally {
       setLoading(false);
@@ -45,6 +55,23 @@ export default function ActivityPage() {
   };
 
   const getActionIcon = (action: string) => {
+    // Assignee actions
+    if (action.includes('assignee') || action.includes('assigned')) {
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      );
+    }
+    // Due date actions
+    if (action.includes('due date')) {
+      return (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      );
+    }
+
     switch (action) {
       case 'created':
         return (
@@ -53,6 +80,7 @@ export default function ActivityPage() {
           </svg>
         );
       case 'updated':
+      case 'updated note':
         return (
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -80,10 +108,20 @@ export default function ActivityPage() {
   };
 
   const getActionColor = (action: string) => {
+    // Assignee actions
+    if (action.includes('assignee') || action.includes('assigned')) {
+      return 'text-indigo-600 bg-indigo-100';
+    }
+    // Due date actions
+    if (action.includes('due date')) {
+      return 'text-orange-600 bg-orange-100';
+    }
+
     switch (action) {
       case 'created':
         return 'text-green-600 bg-green-100';
       case 'updated':
+      case 'updated note':
         return 'text-blue-600 bg-blue-100';
       case 'deleted':
         return 'text-red-600 bg-red-100';
@@ -91,6 +129,105 @@ export default function ActivityPage() {
         return 'text-purple-600 bg-purple-100';
       default:
         return 'text-gray-600 bg-gray-100';
+    }
+  };
+
+  const formatActivityDescription = (log: ActivityLog) => {
+    const details = log.details || {};
+    
+    switch (log.action) {
+      case 'assigned note to':
+        return (
+          <span>
+            <span className="text-gray-600">assigned</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>{' '}
+            <span className="text-gray-600">to</span>{' '}
+            <span className="font-semibold text-indigo-600">{details.assigneeTo}</span>
+          </span>
+        );
+      
+      case 'removed assignee':
+        return (
+          <span>
+            <span className="text-gray-600">removed assignee from</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>
+            {details.previousAssignee && (
+              <>
+                {' '}<span className="text-gray-500">(was {details.previousAssignee})</span>
+              </>
+            )}
+          </span>
+        );
+      
+      case 'changed assignee':
+        return (
+          <span>
+            <span className="text-gray-600">changed assignee of</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>{' '}
+            <span className="text-gray-600">from</span>{' '}
+            <span className="font-semibold text-gray-700">{details.from}</span>{' '}
+            <span className="text-gray-600">to</span>{' '}
+            <span className="font-semibold text-indigo-600">{details.to}</span>
+          </span>
+        );
+      
+      case 'set due date':
+        return (
+          <span>
+            <span className="text-gray-600">set due date for</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>{' '}
+            <span className="text-gray-600">to</span>{' '}
+            <span className="font-semibold text-orange-600">{details.dueDate}</span>
+          </span>
+        );
+      
+      case 'removed due date':
+        return (
+          <span>
+            <span className="text-gray-600">removed due date from</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>
+            {details.previousDueDate && (
+              <>
+                {' '}<span className="text-gray-500">(was {details.previousDueDate})</span>
+              </>
+            )}
+          </span>
+        );
+      
+      case 'changed due date':
+        return (
+          <span>
+            <span className="text-gray-600">changed due date of</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>{' '}
+            <span className="text-gray-600">from</span>{' '}
+            <span className="font-semibold text-gray-700">{details.from}</span>{' '}
+            <span className="text-gray-600">to</span>{' '}
+            <span className="font-semibold text-orange-600">{details.to}</span>
+          </span>
+        );
+      
+      case 'updated note':
+        return (
+          <span>
+            <span className="text-gray-600">updated</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>
+            {details.changes && details.changes.length > 0 && (
+              <>
+                {' '}<span className="text-gray-500">({details.changes.join(', ')})</span>
+              </>
+            )}
+          </span>
+        );
+      
+      default:
+        // Default format for other actions
+        return (
+          <span>
+            <span className="text-gray-600">{log.action}</span>{' '}
+            <span className="text-gray-600">{log.entityType}</span>{' '}
+            <span className="font-medium text-gray-900">"{log.entityName}"</span>
+          </span>
+        );
     }
   };
 
@@ -126,12 +263,16 @@ export default function ActivityPage() {
 
   const filteredLogs = logs.filter(log => {
     if (filter === 'all') return true;
+    if (filter === 'updated') {
+      // Include all update-related actions
+      return log.action === 'updated' || 
+             log.action === 'updated note' || 
+             log.action.includes('assignee') || 
+             log.action.includes('assigned') ||
+             log.action.includes('due date');
+    }
     return log.action === filter;
   });
-
-  if (user?.role !== 'admin') {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -215,11 +356,9 @@ export default function ActivityPage() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-start gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900">{log.userName}</span>
-                    <span className="text-gray-600">{log.action}</span>
-                    <span className="text-gray-600">{log.entityType}</span>
-                    <span className="font-medium text-gray-900 truncate">"{log.entityName}"</span>
+                    {formatActivityDescription(log)}
                     <span className="text-xl">{getEntityIcon(log.entityType)}</span>
                   </div>
                   <div className="flex items-center gap-3 mt-2 text-sm text-gray-500">
