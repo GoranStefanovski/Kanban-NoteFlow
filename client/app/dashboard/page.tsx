@@ -21,6 +21,12 @@ export default function Dashboard() {
 
   const selectedProject = projects.find(p => p._id === selectedProjectId);
 
+  // Capitalize first letter of username
+  const formatUsername = (username?: string) => {
+    if (!username) return '';
+    return username.charAt(0).toUpperCase() + username.slice(1).toLowerCase();
+  };
+
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
@@ -88,11 +94,12 @@ export default function Dashboard() {
                   </button>
                 </>
               )}
-              <div className="text-sm text-gray-600 hidden xl:block">
-                <span className="font-medium">{user?.username || user?.email}</span>
-                <span className="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
-                  {user?.role}
-                </span>
+              <div className="text-sm text-gray-600 hidden xl:flex xl:items-center xl:gap-2">
+                {user?.username && (
+                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium">
+                    {formatUsername(user.username)}
+                  </span>
+                )}
               </div>
               <button
                 onClick={() => setShowLogoutModal(true)}
@@ -117,10 +124,11 @@ export default function Dashboard() {
           {showMobileMenu && (
             <div className="lg:hidden mt-3 pt-3 border-t border-gray-200 space-y-2">
               <div className="text-sm text-gray-600 pb-2">
-                <span className="font-medium block">{user?.username || user?.email}</span>
-                <span className="inline-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs">
-                  {user?.role}
-                </span>
+                {user?.username && (
+                  <span className="inline-block mt-1 px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium">
+                    {formatUsername(user.username)}
+                  </span>
+                )}
               </div>
               {selectedProjectId && (
                 <button
