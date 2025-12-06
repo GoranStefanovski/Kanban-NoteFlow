@@ -52,8 +52,11 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('Project ID required');
     }
 
+    // Convert projectId to string for comparison (handles ObjectId vs string)
+    const projectIdStr = projectId.toString();
+
     const permission = user.permissions?.find(
-      (p) => p.projectId === projectId,
+      (p) => p.projectId === projectIdStr,
     );
 
     if (!permission) {

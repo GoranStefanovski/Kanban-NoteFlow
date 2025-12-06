@@ -56,7 +56,10 @@ export class AuthService {
   }
 
   async requestPublicUserCode(username: string) {
-    const user = await this.publicUserModel.findOne({ username });
+    // Case-insensitive username lookup
+    const user = await this.publicUserModel.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -87,7 +90,10 @@ export class AuthService {
   }
 
   async verifyPublicUserCode(username: string, code: string) {
-    const user = await this.publicUserModel.findOne({ username });
+    // Case-insensitive username lookup
+    const user = await this.publicUserModel.findOne({ 
+      username: { $regex: new RegExp(`^${username}$`, 'i') } 
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }

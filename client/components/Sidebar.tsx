@@ -22,6 +22,10 @@ export default function Sidebar({ open, onToggle }: SidebarProps) {
 
   const handleProjectClick = (projectId: string) => {
     selectProject(projectId);
+    // Auto-close sidebar on mobile after selecting a project
+    if (window.innerWidth < 1024) { // lg breakpoint
+      onToggle();
+    }
   };
 
   const handleDeleteProject = async (e: React.MouseEvent, projectId: string, projectName: string) => {

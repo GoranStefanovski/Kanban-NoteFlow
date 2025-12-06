@@ -13,9 +13,9 @@ export class PublicUsersService {
   ) {}
 
   async create(createPublicUserDto: CreatePublicUserDto) {
-    // Check if username already exists
+    // Check if username already exists (case-insensitive)
     const existingUser = await this.publicUserModel.findOne({
-      username: createPublicUserDto.username,
+      username: { $regex: new RegExp(`^${createPublicUserDto.username}$`, 'i') },
     });
     if (existingUser) {
       throw new ConflictException('Username already exists');
@@ -38,10 +38,10 @@ export class PublicUsersService {
   }
 
   async update(id: string, updatePublicUserDto: UpdatePublicUserDto) {
-    // If updating username, check it doesn't already exist
+    // If updating username, check it doesn't already exist (case-insensitive)
     if (updatePublicUserDto.username) {
       const existingUser = await this.publicUserModel.findOne({
-        username: updatePublicUserDto.username,
+        username: { $regex: new RegExp(`^${updatePublicUserDto.username}$`, 'i') },
         _id: { $ne: id },
       });
       if (existingUser) {
