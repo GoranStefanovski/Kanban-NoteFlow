@@ -258,7 +258,7 @@ export default function NoteCard({ note, projectId, onEdit }: NoteCardProps) {
                       >
                         None
                       </button>
-                      {projectUsers.map((projectUser) => (
+                      {projectUsers.filter(user => user.role !== 'admin').map((projectUser) => (
                         <button
                           key={projectUser.id}
                           onClick={(e) => {
