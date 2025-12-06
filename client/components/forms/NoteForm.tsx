@@ -126,9 +126,9 @@ export default function NoteForm({ note, groupId, projectId, onClose }: NoteForm
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
             >
               <option value="">None</option>
-              {projectUsers.map((user) => (
+              {projectUsers.filter(user => user.role !== 'admin').map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.role === 'admin' ? '(Admin)' : ''}
+                  {user.name}
                 </option>
               ))}
             </select>
