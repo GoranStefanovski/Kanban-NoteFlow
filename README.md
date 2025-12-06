@@ -75,11 +75,13 @@ cd personal-notepad
 
 # 2. Create and configure environment
 cp .env.example .env
-nano .env  # Update with your values
+nano .env  # Update .env (see steps below)
 
 # 3. Start all services
-docker compose up --build -d
+chmod +x start-docker.sh && chmod +x start-docker-fresh.sh
+./start-docker.sh
 
+TIP: IF FRESH DB NEEDED RUN ./start-docker-fresh.sh
 # 4. Access the application
 # Frontend: http://localhost:3001
 # Backend: http://localhost:3000/api
@@ -323,3 +325,9 @@ UNLICENSED - Private Project
 ## Support
 
 For issues or questions, please create an issue in the repository.
+
+---
+
+<div align="center">
+  Made with ❤️ by Tevidma © 2025
+</div>
